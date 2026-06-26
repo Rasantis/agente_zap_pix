@@ -12,7 +12,7 @@ def test_load_documents_reads_txt_and_md(tmp_path):
     assert all("fonte" in meta for _, meta in docs)
 
 
-def test_ingest_chunks_embeds_and_upserts(tmp_path, monkeypatch):
+def test_ingest_chunks_embeds_and_inserts(tmp_path, monkeypatch):
     (tmp_path / "a.txt").write_text("Parágrafo um.\n\nParágrafo dois.", encoding="utf-8")
 
     upserts = []

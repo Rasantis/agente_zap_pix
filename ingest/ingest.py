@@ -34,6 +34,8 @@ LOADERS = {
 def load_documents(folder: str) -> list[tuple[str, dict]]:
     out: list[tuple[str, dict]] = []
     for path in sorted(pathlib.Path(folder).rglob("*")):
+        if not path.is_file():
+            continue
         loader = LOADERS.get(path.suffix.lower())
         if not loader:
             continue
