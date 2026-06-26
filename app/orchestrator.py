@@ -30,8 +30,9 @@ async def handle_message(parsed: ParsedMessage) -> None:
         {"role": "model", "content": turn.resposta},
     ])[-s.history_max_messages:]
 
-    send_link = should_send_calendly(lead_data, turn.acao)
     lead_id = conv.get("lead_id")
+    already_scheduled = lead_id is not None  # link do Calendly já foi enviado antes
+    send_link = not already_scheduled and should_send_calendly(lead_data, turn.acao)
     if send_link:
         lead_id = store.create_or_update_lead(
             conv, lead_data, turn.classificacao.model_dump(), parsed.from_phone

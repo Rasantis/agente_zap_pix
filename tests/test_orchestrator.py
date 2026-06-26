@@ -82,3 +82,42 @@ async def test_handle_message_no_link_when_incomplete(monkeypatch):
     await orch.handle_message(ParsedMessage("wamid.2", "5511888", "X", "oi", "PHONE"))
 
     assert len(sent) == 1
+
+
+@pytest.mark.asyncio
+async def test_handle_message_no_resend_when_already_scheduled(monkeypatch):
+    sent = []
+
+    monkeypatch.setattr(orch, "get_settings", _settings)
+    # conversa que JÁ tem lead_id => o link do Calendly já foi enviado num turno anterior
+    monkeypatch.setattr(
+        orch.store, "get_conversation",
+        lambda phone: {"messages": [], "lead_data": {"nome": "Ana", "necessidade": "site"}, "lead_id": 7},
+    )
+    monkeypatch.setattr(orch.rag, "retrieve", lambda text: [])
+    monkeypatch.setattr(
+        orch.gemini_client, "generate_turn",
+        lambda history, context, lead_data, message: TurnResult(
+            resposta="Posso ajudar em mais alguma coisa?",
+            dados_lead={"nome": "Ana", "necessidade": "site"},
+            classificacao={"etiqueta": "quente", "tema": "site"},
+            acao="mandar_calendly",
+        ),
+    )
+
+    def _fail(*a, **k):
+        raise AssertionError("não deveria recriar lead nem reenviar o link")
+
+    monkeypatch.setattr(orch.store, "create_or_update_lead", _fail)
+    monkeypatch.setattr(orch.store, "upsert_conversation", lambda *a, **k: {})
+
+    async def fake_send(to, body):
+        sent.append((to, body))
+
+    monkeypatch.setattr(orch.whatsapp, "send_text", fake_send)
+
+    await orch.handle_message(ParsedMessage("wamid.3", "5511999", "Ana", "e aí?", "PHONE"))
+
+    # só a resposta normal — NÃO reenvia o Calendly
+    assert len(sent) == 1
+    assert "calendly" not in sent[0][1].lower()
