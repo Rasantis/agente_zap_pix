@@ -251,3 +251,28 @@ RAG_TOP_K=5
 RAG_MATCH_THRESHOLD=0.6
 HISTORY_MAX_MESSAGES=20
 ```
+
+## 15. Atualizações pós-design (implementação)
+
+Mudanças e decisões surgidas durante a implementação/validação. O design acima
+permanece a base; estas são as evoluções:
+
+- **`Classificacao.etiqueta` virou `Literal["quente","morno","frio"]`** — propaga o enum
+  para o schema de saída estruturada do Gemini e alinha com o `CHECK` de `leads.etiqueta`
+  (evita que um valor fora do conjunto quebre o INSERT do lead).
+- **`store.insert_document`** — renomeado de `upsert_document` (a função faz `insert`; o
+  dedup é via `--reset`/`clear_documents` na reindexação).
+- **Calendly enviado uma única vez** — o orquestrador só dispara o link após ter
+  `nome` + `necessidade` **e** se a conversa ainda não tem `lead_id` (guard
+  `already_scheduled`), evitando reenviar o link a cada mensagem seguinte.
+- **Prompt ajustado** — o modelo só usa a ação `mandar_calendly` depois de coletar
+  nome + necessidade (antes disso, `continuar`).
+- **Hardening** — `set_updated_at` recriada com `search_path` fixo (advisor de segurança do Supabase).
+- **Deploy** — adicionados `Dockerfile`, `Procfile`, `.dockerignore` e `DEPLOY.md` (Render/Railway).
+- **Ingestão multi-formato validada** — `.md`, `.txt`, `.pdf` (pypdf) e `.docx` (python-docx).
+- **Nota de produção** — o free tier do Gemini é ≈ 10 req/min; para volume real, habilitar billing no Google AI Studio.
+
+### Status (2026-06-26)
+Código completo, 46 testes passando, em `main`. Supabase aplicado e validado ao vivo
+(projeto `wsrjwdkuaoaqgscuxmrj`). RAG validado de ponta a ponta. Pendente para ir ao
+vivo: credenciais Meta (com o time), link do Calendly e o deploy.

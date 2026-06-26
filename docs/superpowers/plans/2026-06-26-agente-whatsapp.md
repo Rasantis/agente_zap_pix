@@ -1082,7 +1082,7 @@ git commit -m "feat: gemini generate_turn com saída estruturada (TurnResult)"
   - `upsert_conversation(phone: str, messages: list, lead_data: dict, lead_id: int | None) -> dict`.
   - `create_or_update_lead(conversation: dict | None, lead_data: dict, classificacao: dict, telefone: str) -> int`.
   - `search_documents(embedding: list[float], threshold: float, count: int) -> list[dict]`.
-  - `upsert_document(content: str, metadata: dict, embedding: list[float]) -> None`.
+  - `insert_document(content: str, metadata: dict, embedding: list[float]) -> None`.
   - `clear_documents() -> None`.
 
 - [ ] **Step 1: Escrever o teste que falha (`tests/test_store.py`)**
@@ -1203,7 +1203,7 @@ def search_documents(embedding: list[float], threshold: float, count: int) -> li
     return res.data or []
 
 
-def upsert_document(content: str, metadata: dict, embedding: list[float]) -> None:
+def insert_document(content: str, metadata: dict, embedding: list[float]) -> None:
     _supabase().table("documents").insert(
         {"content": content, "metadata": metadata, "embedding": embedding}
     ).execute()
@@ -1751,7 +1751,7 @@ git commit -m "feat: webhook FastAPI (verificação + recebimento + dedup)"
 - Test: `tests/test_ingest.py`
 
 **Interfaces:**
-- Consumes: `ingest.chunker.chunk_text`, `app.gemini_client.embed_text`, `app.store` (upsert_document, clear_documents).
+- Consumes: `ingest.chunker.chunk_text`, `app.gemini_client.embed_text`, `app.store` (insert_document, clear_documents).
 - Produces:
   - `load_documents(folder: str) -> list[tuple[str, dict]]`.
   - `ingest(folder: str, reset: bool = False) -> int` (retorna nº de chunks indexados).
@@ -1779,7 +1779,7 @@ def test_ingest_chunks_embeds_and_upserts(tmp_path, monkeypatch):
     upserts = []
     monkeypatch.setattr(ing, "chunk_text", lambda text: ["c1", "c2"])
     monkeypatch.setattr(ing.gemini_client, "embed_text", lambda text, task_type: [0.1])
-    monkeypatch.setattr(ing.store, "upsert_document",
+    monkeypatch.setattr(ing.store, "insert_document",
                         lambda content, metadata, embedding: upserts.append(content))
     monkeypatch.setattr(ing.store, "clear_documents", lambda: upserts.append("CLEARED"))
 
@@ -1851,7 +1851,7 @@ def ingest(folder: str, reset: bool = False) -> int:
     for text, metadata in load_documents(folder):
         for chunk in chunk_text(text):
             embedding = gemini_client.embed_text(chunk, task_type="RETRIEVAL_DOCUMENT")
-            store.upsert_document(chunk, dict(metadata), embedding)
+            store.insert_document(chunk, dict(metadata), embedding)
             total += 1
     return total
 
