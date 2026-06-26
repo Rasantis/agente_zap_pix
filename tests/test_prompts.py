@@ -22,3 +22,10 @@ def test_build_user_turn_empty_context():
     out = build_user_turn(context=[], lead_data={}, message="oi")
     assert "nenhum trecho" in out.lower()
     assert "oi" in out
+    assert "(vazio)" in out
+
+
+def test_build_user_turn_skips_empty_lead_fields():
+    out = build_user_turn(context=[], lead_data={"nome": "Ana", "empresa": ""}, message="oi")
+    assert "nome=Ana" in out
+    assert "empresa=" not in out
