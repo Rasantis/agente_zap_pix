@@ -44,7 +44,7 @@ def generate_turn(
     contents = []
     for m in history:
         role = "user" if m.get("role") == "user" else "model"
-        contents.append(types.Content(role=role, parts=[types.Part(text=m["content"])]))
+        contents.append(types.Content(role=role, parts=[types.Part(text=m.get("content", ""))]))
     contents.append(types.Content(role="user", parts=[types.Part(text=user_turn)]))
 
     resp = _client().models.generate_content(

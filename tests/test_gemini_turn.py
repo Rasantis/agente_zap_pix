@@ -1,4 +1,5 @@
 import app.gemini_client as gc
+from app import prompts
 from app.config import Settings
 from app.models import TurnResult
 
@@ -18,6 +19,7 @@ def test_generate_turn_returns_parsed(monkeypatch):
         def generate_content(self, model, contents, config):
             captured["model"] = model
             captured["contents"] = contents
+            captured["config"] = config
             captured["system"] = config.system_instruction
             return type("R", (), {"parsed": TurnResult(resposta="olá", acao="continuar")})()
 
@@ -36,6 +38,10 @@ def test_generate_turn_returns_parsed(monkeypatch):
 
     assert isinstance(out, TurnResult)
     assert out.resposta == "olá"
-    assert captured["model"] == "gemini-2.5-flash"
+    assert captured["model"] == _settings().chat_model
+    assert captured["config"].system_instruction == prompts.SYSTEM_INSTRUCTION
+    assert captured["config"].temperature == 0.3
+    assert captured["config"].response_mime_type == "application/json"
+    assert captured["config"].response_schema is TurnResult
     # histórico (2) + turno atual (1) = 3 mensagens
     assert len(captured["contents"]) == 3
