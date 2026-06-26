@@ -20,7 +20,8 @@ def chunk_text(text: str, max_chars: int = 2000, overlap_chars: int = 300) -> li
 
         if current and len(current) + len(para) + 2 > max_chars:
             chunks.append(current.strip())
-            current = current[-overlap_chars:] + "\n\n" + para
+            tail = current[-overlap_chars:] if overlap_chars > 0 else ""
+            current = tail + "\n\n" + para
         else:
             current = f"{current}\n\n{para}" if current else para
 

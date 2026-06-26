@@ -22,3 +22,10 @@ def test_long_text_splits_with_overlap():
 def test_huge_paragraph_hard_split():
     out = chunk_text("x" * 1200, max_chars=500, overlap_chars=100)
     assert len(out) >= 3
+
+
+def test_zero_overlap_still_splits():
+    paras = "\n\n".join(f"Parágrafo número {i} com algum conteúdo." for i in range(200))
+    out = chunk_text(paras, max_chars=500, overlap_chars=0)
+    assert len(out) > 1
+    assert all(len(c) <= 500 for c in out)
