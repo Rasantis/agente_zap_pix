@@ -3,7 +3,9 @@ create extension if not exists vector with schema extensions;
 
 -- Trigger genérico para atualizar updated_at
 create or replace function public.set_updated_at()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql
+set search_path = ''
+as $$
 begin
   new.updated_at = now();
   return new;
