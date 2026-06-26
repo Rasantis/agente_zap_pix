@@ -39,3 +39,17 @@ def test_create_lead_inserts_when_no_existing(monkeypatch):
         telefone="5511999",
     )
     assert lead_id == 42
+
+
+def test_create_lead_updates_when_existing(monkeypatch):
+    fake_sb = MagicMock()
+    monkeypatch.setattr(store, "_supabase", lambda: fake_sb)
+    lead_id = store.create_or_update_lead(
+        conversation={"lead_id": 7},
+        lead_data={"nome": "Ana"},
+        classificacao={"etiqueta": "quente", "tema": "site"},
+        telefone="5511999",
+    )
+    assert lead_id == 7
+    fake_sb.table.return_value.update.assert_called_once()
+    fake_sb.table.return_value.insert.assert_not_called()

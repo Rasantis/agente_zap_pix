@@ -27,7 +27,7 @@ def get_conversation(phone: str) -> dict | None:
 def upsert_conversation(phone: str, messages: list, lead_data: dict, lead_id: int | None) -> dict:
     row = {"phone": phone, "messages": messages, "lead_data": lead_data, "lead_id": lead_id}
     res = _supabase().table("conversations").upsert(row, on_conflict="phone").execute()
-    return res.data[0]
+    return res.data[0] if res.data else {}
 
 
 def create_or_update_lead(
@@ -62,7 +62,7 @@ def search_documents(embedding: list[float], threshold: float, count: int) -> li
     return res.data or []
 
 
-def upsert_document(content: str, metadata: dict, embedding: list[float]) -> None:
+def insert_document(content: str, metadata: dict, embedding: list[float]) -> None:
     _supabase().table("documents").insert(
         {"content": content, "metadata": metadata, "embedding": embedding}
     ).execute()
