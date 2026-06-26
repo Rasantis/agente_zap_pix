@@ -30,6 +30,25 @@ STATUS_PAYLOAD = {
     "entry": [{"changes": [{"value": {"statuses": [{"status": "delivered"}]}}]}],
 }
 
+IMAGE_PAYLOAD = {
+    "object": "whatsapp_business_account",
+    "entry": [{
+        "changes": [{
+            "field": "messages",
+            "value": {
+                "metadata": {"phone_number_id": "106540352242922"},
+                "contacts": [{"profile": {"name": "Ana"}, "wa_id": "16505551234"}],
+                "messages": [{
+                    "from": "16505551234",
+                    "id": "wamid.IMG",
+                    "type": "image",
+                    "image": {"id": "media-123"},
+                }],
+            },
+        }],
+    }],
+}
+
 
 def test_parse_incoming_text():
     m = parse_incoming(TEXT_PAYLOAD)
@@ -49,6 +68,14 @@ def test_parse_incoming_malformed_returns_none():
     assert parse_incoming({}) is None
 
 
+def test_parse_incoming_non_text_returns_none():
+    assert parse_incoming(IMAGE_PAYLOAD) is None
+
+
+def test_parse_incoming_value_not_dict_returns_none():
+    assert parse_incoming({"entry": [{"changes": [{"value": [1, 2, 3]}]}]}) is None
+
+
 def test_verify_signature_ok():
     secret = "minha_app_secret"
     body = b'{"hello":"world"}'
@@ -57,5 +84,6 @@ def test_verify_signature_ok():
 
 
 def test_verify_signature_bad():
+    assert verify_signature(b"x", "md5=deadbeef", "secret") is False
     assert verify_signature(b"x", "sha256=deadbeef", "secret") is False
     assert verify_signature(b"x", None, "secret") is False

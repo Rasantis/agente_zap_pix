@@ -10,6 +10,9 @@ def parse_incoming(payload: dict) -> ParsedMessage | None:
     except (KeyError, IndexError, TypeError):
         return None
 
+    if not isinstance(value, dict):
+        return None
+
     messages = value.get("messages")
     if not messages:
         return None
