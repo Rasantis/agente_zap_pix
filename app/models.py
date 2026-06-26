@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -19,7 +20,7 @@ class DadosLead(BaseModel):
 
 
 class Classificacao(BaseModel):
-    etiqueta: str = "morno"
+    etiqueta: Literal["quente", "morno", "frio"] = "morno"
     tema: str = ""
 
 
