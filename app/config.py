@@ -7,14 +7,14 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     gemini_api_key: str
-    meta_access_token: str
+    meta_access_token: str = ""  # pendente até o admin aprovar; o app sobe e verifica o webhook sem ele
     meta_phone_number_id: str
     meta_verify_token: str
     meta_app_secret: str
     meta_graph_version: str = "v23.0"
     supabase_url: str
     supabase_service_key: str
-    calendly_url: str
+    calendly_url: str = ""  # opcional até definir o link do Calendly
     chat_model: str = "gemini-2.5-flash"
     embedding_model: str = "gemini-embedding-001"
     embedding_dim: int = 768
