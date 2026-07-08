@@ -10,6 +10,7 @@ def test_parsed_message_fields():
         phone_number_id="106",
     )
     assert m.from_phone == "5511999"
+    assert m.msg_type == "text"
 
 
 def test_turn_result_defaults():

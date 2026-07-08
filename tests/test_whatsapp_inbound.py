@@ -58,6 +58,7 @@ def test_parse_incoming_text():
     assert m.contact_name == "Sheena Nelson"
     assert m.text == "Vocês entregam no sábado?"
     assert m.phone_number_id == "106540352242922"
+    assert m.msg_type == "text"
 
 
 def test_parse_incoming_status_returns_none():
@@ -68,8 +69,50 @@ def test_parse_incoming_malformed_returns_none():
     assert parse_incoming({}) is None
 
 
-def test_parse_incoming_non_text_returns_none():
-    assert parse_incoming(IMAGE_PAYLOAD) is None
+def test_parse_incoming_image_returns_msg_type():
+    m = parse_incoming(IMAGE_PAYLOAD)
+    assert m is not None
+    assert m.msg_type == "image"
+    assert m.text == ""
+    assert m.message_id == "wamid.IMG"
+
+
+AUDIO_PAYLOAD = {
+    "object": "whatsapp_business_account",
+    "entry": [{
+        "changes": [{
+            "field": "messages",
+            "value": {
+                "metadata": {"phone_number_id": "106540352242922"},
+                "contacts": [{"profile": {"name": "Ana"}, "wa_id": "16505551234"}],
+                "messages": [{
+                    "from": "16505551234",
+                    "id": "wamid.AUDIO",
+                    "type": "audio",
+                    "audio": {"mime_type": "audio/ogg; codecs=opus", "id": "1908647269898587", "voice": True},
+                }],
+            },
+        }],
+    }],
+}
+
+
+def test_parse_incoming_audio_returns_msg_type():
+    m = parse_incoming(AUDIO_PAYLOAD)
+    assert m is not None
+    assert m.msg_type == "audio"
+    assert m.text == ""
+
+
+def test_parse_incoming_reaction_ignored():
+    payload = {
+        "entry": [{"changes": [{"value": {
+            "metadata": {"phone_number_id": "1"},
+            "messages": [{"from": "1", "id": "wamid.R", "type": "reaction",
+                          "reaction": {"message_id": "wamid.X", "emoji": "👍"}}],
+        }}]}],
+    }
+    assert parse_incoming(payload) is None
 
 
 def test_parse_incoming_value_not_dict_returns_none():

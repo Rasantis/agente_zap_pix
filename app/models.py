@@ -11,6 +11,7 @@ class ParsedMessage:
     contact_name: str
     text: str
     phone_number_id: str
+    msg_type: str = "text"
 
 
 class DadosLead(BaseModel):

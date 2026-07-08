@@ -46,3 +46,21 @@ async def test_send_text_posts_to_graph_api(monkeypatch):
     assert sink["json"]["to"] == "16505551234"
     assert sink["json"]["text"]["body"] == "Olá!"
     assert sink["json"]["type"] == "text"
+
+
+@pytest.mark.asyncio
+async def test_mark_read_and_typing_posts_status(monkeypatch):
+    sink = {}
+    monkeypatch.setattr(wa, "get_settings", lambda: Settings(
+        gemini_api_key="k", meta_access_token="TOK", meta_phone_number_id="PHONE",
+        meta_verify_token="v", meta_app_secret="s", supabase_url="https://x.supabase.co",
+        supabase_service_key="srv", calendly_url="https://calendly.com/e",
+    ))
+    monkeypatch.setattr(wa.httpx, "AsyncClient", lambda *a, **k: _FakeClient(sink))
+
+    await wa.mark_read_and_typing("wamid.ABC")
+
+    assert sink["url"] == "https://graph.facebook.com/v23.0/PHONE/messages"
+    assert sink["json"]["status"] == "read"
+    assert sink["json"]["message_id"] == "wamid.ABC"
+    assert sink["json"]["typing_indicator"] == {"type": "text"}
