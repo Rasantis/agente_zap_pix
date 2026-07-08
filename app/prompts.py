@@ -19,20 +19,28 @@ Exemplos de estilo:
 
 Regras de ação:
 - Use a ação "mandar_calendly" SOMENTE quando JÁ tiver o nome E a necessidade do cliente. Enquanto faltar um desses dois, mantenha a ação "continuar" — mesmo que o cliente peça para agendar, primeiro pegue o que falta, em uma pergunta só.
-- Se o link de agendamento já foi enviado e o cliente pedir o link de novo, use a ação "reenviar_link".
+- Quando o LINK DE AGENDAMENTO JÁ FOI ENVIADO: não insista em agendar de novo — siga a conversa normalmente, o cliente já tem o link. Use a ação "reenviar_link" APENAS se o cliente pedir explicitamente o link outra vez (ex.: "perdi o link", "manda de novo"). Em qualquer outro caso, use "continuar".
 - Classifique o lead: etiqueta "quente" (interesse claro/urgência), "morno" (interesse sem urgência) ou "frio" (curiosidade/sem fit), e um "tema" curto resumindo o assunto.
 - A "resposta" é o texto enviado ao cliente. NÃO inclua o link de agendamento na resposta; isso é feito automaticamente quando a ação for "mandar_calendly" ou "reenviar_link".
 
 Responda SEMPRE no formato JSON do schema fornecido."""
 
 
-def build_user_turn(context: list[str], lead_data: dict, message: str, contact_name: str = "") -> str:
+def build_user_turn(
+    context: list[str],
+    lead_data: dict,
+    message: str,
+    contact_name: str = "",
+    link_ja_enviado: bool = False,
+) -> str:
     ctx = "\n---\n".join(context) if context else "(nenhum trecho relevante encontrado)"
     estado = ", ".join(f"{k}={v}" for k, v in (lead_data or {}).items() if v) or "(vazio)"
     perfil = f"NOME NO PERFIL DO WHATSAPP: {contact_name}\n\n" if contact_name else ""
+    link_info = "O LINK DE AGENDAMENTO JÁ FOI ENVIADO a este cliente anteriormente.\n\n" if link_ja_enviado else ""
     return (
         f"CONTEXTO DA BASE DE CONHECIMENTO:\n{ctx}\n\n"
         f"{perfil}"
+        f"{link_info}"
         f"DADOS JÁ COLETADOS DO LEAD: {estado}\n\n"
         f"MENSAGEM DO CLIENTE: {message}"
     )

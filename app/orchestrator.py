@@ -21,7 +21,12 @@ async def handle_message(parsed: ParsedMessage) -> None:
     context_rows = rag.retrieve(parsed.text)
     context = [r.get("content", "") for r in context_rows]
 
-    turn = gemini_client.generate_turn(history, context, lead_data, parsed.text, parsed.contact_name)
+    lead_id = conv.get("lead_id")
+    already_scheduled = lead_id is not None  # link do Calendly já foi enviado antes
+
+    turn = gemini_client.generate_turn(
+        history, context, lead_data, parsed.text, parsed.contact_name, already_scheduled
+    )
 
     lead_data = store.merge_lead_data(lead_data, turn.dados_lead.model_dump())
 
@@ -30,8 +35,6 @@ async def handle_message(parsed: ParsedMessage) -> None:
         {"role": "model", "content": turn.resposta},
     ])[-s.history_max_messages:]
 
-    lead_id = conv.get("lead_id")
-    already_scheduled = lead_id is not None  # link do Calendly já foi enviado antes
     resend = already_scheduled and turn.acao == "reenviar_link"
     send_link = resend or (not already_scheduled and should_send_calendly(lead_data, turn.acao))
     if send_link and not resend:

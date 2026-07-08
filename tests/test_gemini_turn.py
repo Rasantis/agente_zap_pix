@@ -35,6 +35,7 @@ def test_generate_turn_returns_parsed(monkeypatch):
         lead_data={"nome": "Ana"},
         message="vocês fazem site?",
         contact_name="Marcos",
+        link_ja_enviado=True,
     )
 
     assert isinstance(out, TurnResult)
@@ -47,3 +48,4 @@ def test_generate_turn_returns_parsed(monkeypatch):
     # histórico (2) + turno atual (1) = 3 mensagens
     assert len(captured["contents"]) == 3
     assert "Marcos" in captured["contents"][-1].parts[0].text
+    assert "JÁ FOI ENVIADO" in captured["contents"][-1].parts[0].text

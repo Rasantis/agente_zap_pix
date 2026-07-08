@@ -38,9 +38,10 @@ def generate_turn(
     lead_data: dict,
     message: str,
     contact_name: str = "",
+    link_ja_enviado: bool = False,
 ) -> TurnResult:
     s = get_settings()
-    user_turn = prompts.build_user_turn(context, lead_data, message, contact_name)
+    user_turn = prompts.build_user_turn(context, lead_data, message, contact_name, link_ja_enviado)
 
     contents = []
     for m in history:

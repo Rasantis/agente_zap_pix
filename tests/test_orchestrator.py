@@ -34,7 +34,7 @@ async def test_handle_message_sends_link_when_ready(monkeypatch):
     monkeypatch.setattr(orch.rag, "retrieve", lambda text: [{"content": "doc"}])
     monkeypatch.setattr(
         orch.gemini_client, "generate_turn",
-        lambda history, context, lead_data, message, contact_name="": TurnResult(
+        lambda history, context, lead_data, message, contact_name="", link_ja_enviado=False: TurnResult(
             resposta="Boa! Vamos agendar?",
             dados_lead={"nome": "Ana", "necessidade": "site"},
             classificacao={"etiqueta": "quente", "tema": "site"},
@@ -65,7 +65,7 @@ async def test_handle_message_no_link_when_incomplete(monkeypatch):
     monkeypatch.setattr(orch.rag, "retrieve", lambda text: [])
     monkeypatch.setattr(
         orch.gemini_client, "generate_turn",
-        lambda history, context, lead_data, message, contact_name="": TurnResult(resposta="Como posso ajudar?"),
+        lambda history, context, lead_data, message, contact_name="", link_ja_enviado=False: TurnResult(resposta="Como posso ajudar?"),
     )
 
     def _fail(*a, **k):
@@ -97,7 +97,7 @@ async def test_handle_message_no_resend_when_already_scheduled(monkeypatch):
     monkeypatch.setattr(orch.rag, "retrieve", lambda text: [])
     monkeypatch.setattr(
         orch.gemini_client, "generate_turn",
-        lambda history, context, lead_data, message, contact_name="": TurnResult(
+        lambda history, context, lead_data, message, contact_name="", link_ja_enviado=False: TurnResult(
             resposta="Posso ajudar em mais alguma coisa?",
             dados_lead={"nome": "Ana", "necessidade": "site"},
             classificacao={"etiqueta": "quente", "tema": "site"},
@@ -135,7 +135,7 @@ async def test_handle_message_resends_link_on_explicit_request(monkeypatch):
     monkeypatch.setattr(orch.rag, "retrieve", lambda text: [])
     monkeypatch.setattr(
         orch.gemini_client, "generate_turn",
-        lambda history, context, lead_data, message, contact_name="": TurnResult(
+        lambda history, context, lead_data, message, contact_name="", link_ja_enviado=False: TurnResult(
             resposta="Claro! Vou te mandar o link de novo.",
             dados_lead={"nome": "Ana", "necessidade": "site"},
             classificacao={"etiqueta": "quente", "tema": "site"},

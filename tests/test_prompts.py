@@ -39,3 +39,13 @@ def test_build_user_turn_includes_profile_name():
 def test_build_user_turn_omits_profile_line_when_empty():
     out = build_user_turn(context=[], lead_data={}, message="oi")
     assert "PERFIL" not in out
+
+
+def test_build_user_turn_flags_link_already_sent():
+    out = build_user_turn(context=[], lead_data={}, message="oi", link_ja_enviado=True)
+    assert "JÁ FOI ENVIADO" in out
+
+
+def test_build_user_turn_no_link_flag_by_default():
+    out = build_user_turn(context=[], lead_data={}, message="oi")
+    assert "JÁ FOI ENVIADO" not in out
