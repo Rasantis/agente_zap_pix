@@ -12,6 +12,8 @@ app = FastAPI()
 logger = logging.getLogger("agente_zap")
 
 FALLBACK_MSG = "Tive uma instabilidade aqui do meu lado 😅 Pode mandar a mensagem de novo, por favor?"
+FALLBACK_AUDIO = "Ainda não consigo ouvir áudios por aqui 🙏 Pode me escrever, por favor?"
+FALLBACK_UNSUPPORTED = "Por enquanto eu só consigo ler mensagens de texto 🙏 Pode escrever pra mim?"
 
 _seen_ids: "OrderedDict[str, None]" = OrderedDict()
 _SEEN_MAX = 1000
@@ -40,6 +42,17 @@ async def process_event(payload: dict) -> None:
     if parsed is None:
         return
     if _already_seen(parsed.message_id):
+        return
+    try:
+        await whatsapp.mark_read_and_typing(parsed.message_id)
+    except Exception:
+        logger.warning("Indicador de digitação falhou para %s", parsed.message_id)
+    if parsed.msg_type != "text":
+        msg = FALLBACK_AUDIO if parsed.msg_type == "audio" else FALLBACK_UNSUPPORTED
+        try:
+            await whatsapp.send_text(parsed.from_phone, msg)
+        except Exception:
+            logger.exception("Falha ao enviar fallback de mídia para %s", parsed.from_phone)
         return
     try:
         await handle_message(parsed)

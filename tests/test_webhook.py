@@ -19,6 +19,11 @@ def _settings(monkeypatch):
     )
     monkeypatch.setattr(main, "get_settings", lambda: s)
     main._seen_ids.clear()
+
+    async def _noop_typing(message_id):
+        return None
+
+    monkeypatch.setattr(main.whatsapp, "mark_read_and_typing", _noop_typing)
     return s
 
 
@@ -103,3 +108,92 @@ def test_post_handle_error_sends_fallback(monkeypatch):
     assert resp.status_code == 200
     assert len(sent) == 1
     assert "instabilidade" in sent[0][1]
+
+
+def _signed(body: bytes):
+    return "sha256=" + hmac.new(b"SECRET", body, hashlib.sha256).hexdigest()
+
+
+def test_post_audio_sends_fallback(monkeypatch):
+    sent = []
+
+    async def fake_send(to, body):
+        sent.append((to, body))
+
+    async def _boom(parsed):
+        raise AssertionError("handle_message não deve rodar para áudio")
+
+    monkeypatch.setattr(main.whatsapp, "send_text", fake_send)
+    monkeypatch.setattr(main, "handle_message", _boom)
+
+    body = json.dumps({
+        "entry": [{"changes": [{"value": {
+            "metadata": {"phone_number_id": "PHONE"},
+            "contacts": [{"profile": {"name": "Ana"}}],
+            "messages": [{"from": "5511999", "id": "wamid.AUD1", "type": "audio",
+                          "audio": {"mime_type": "audio/ogg; codecs=opus", "id": "123", "voice": True}}],
+        }}]}],
+    }).encode()
+
+    client = TestClient(main.app)
+    resp = client.post("/webhook", content=body, headers={"X-Hub-Signature-256": _signed(body)})
+
+    assert resp.status_code == 200
+    assert len(sent) == 1
+    assert "áudio" in sent[0][1] or "udios" in sent[0][1]
+
+
+def test_post_text_marks_read_and_typing(monkeypatch):
+    typed = []
+
+    async def fake_typing(message_id):
+        typed.append(message_id)
+
+    async def fake_handle(parsed):
+        return None
+
+    monkeypatch.setattr(main.whatsapp, "mark_read_and_typing", fake_typing)
+    monkeypatch.setattr(main, "handle_message", fake_handle)
+
+    body = json.dumps({
+        "entry": [{"changes": [{"value": {
+            "metadata": {"phone_number_id": "PHONE"},
+            "contacts": [{"profile": {"name": "Ana"}}],
+            "messages": [{"from": "5511999", "id": "wamid.TYP1", "type": "text",
+                          "text": {"body": "oi"}}],
+        }}]}],
+    }).encode()
+
+    client = TestClient(main.app)
+    resp = client.post("/webhook", content=body, headers={"X-Hub-Signature-256": _signed(body)})
+
+    assert resp.status_code == 200
+    assert typed == ["wamid.TYP1"]
+
+
+def test_post_typing_failure_does_not_block(monkeypatch):
+    handled = []
+
+    async def broken_typing(message_id):
+        raise RuntimeError("graph fora do ar")
+
+    async def fake_handle(parsed):
+        handled.append(parsed.message_id)
+
+    monkeypatch.setattr(main.whatsapp, "mark_read_and_typing", broken_typing)
+    monkeypatch.setattr(main, "handle_message", fake_handle)
+
+    body = json.dumps({
+        "entry": [{"changes": [{"value": {
+            "metadata": {"phone_number_id": "PHONE"},
+            "contacts": [{"profile": {"name": "Ana"}}],
+            "messages": [{"from": "5511999", "id": "wamid.TYP2", "type": "text",
+                          "text": {"body": "oi"}}],
+        }}]}],
+    }).encode()
+
+    client = TestClient(main.app)
+    resp = client.post("/webhook", content=body, headers={"X-Hub-Signature-256": _signed(body)})
+
+    assert resp.status_code == 200
+    assert handled == ["wamid.TYP2"]
