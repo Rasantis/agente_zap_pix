@@ -34,7 +34,7 @@ async def test_handle_message_sends_link_when_ready(monkeypatch):
     monkeypatch.setattr(orch.rag, "retrieve", lambda text: [{"content": "doc"}])
     monkeypatch.setattr(
         orch.gemini_client, "generate_turn",
-        lambda history, context, lead_data, message: TurnResult(
+        lambda history, context, lead_data, message, contact_name="": TurnResult(
             resposta="Boa! Vamos agendar?",
             dados_lead={"nome": "Ana", "necessidade": "site"},
             classificacao={"etiqueta": "quente", "tema": "site"},
@@ -65,7 +65,7 @@ async def test_handle_message_no_link_when_incomplete(monkeypatch):
     monkeypatch.setattr(orch.rag, "retrieve", lambda text: [])
     monkeypatch.setattr(
         orch.gemini_client, "generate_turn",
-        lambda history, context, lead_data, message: TurnResult(resposta="Como posso ajudar?"),
+        lambda history, context, lead_data, message, contact_name="": TurnResult(resposta="Como posso ajudar?"),
     )
 
     def _fail(*a, **k):
@@ -97,7 +97,7 @@ async def test_handle_message_no_resend_when_already_scheduled(monkeypatch):
     monkeypatch.setattr(orch.rag, "retrieve", lambda text: [])
     monkeypatch.setattr(
         orch.gemini_client, "generate_turn",
-        lambda history, context, lead_data, message: TurnResult(
+        lambda history, context, lead_data, message, contact_name="": TurnResult(
             resposta="Posso ajudar em mais alguma coisa?",
             dados_lead={"nome": "Ana", "necessidade": "site"},
             classificacao={"etiqueta": "quente", "tema": "site"},
@@ -121,3 +121,40 @@ async def test_handle_message_no_resend_when_already_scheduled(monkeypatch):
     # só a resposta normal — NÃO reenvia o Calendly
     assert len(sent) == 1
     assert "calendly" not in sent[0][1].lower()
+
+
+@pytest.mark.asyncio
+async def test_handle_message_resends_link_on_explicit_request(monkeypatch):
+    sent = []
+
+    monkeypatch.setattr(orch, "get_settings", _settings)
+    monkeypatch.setattr(
+        orch.store, "get_conversation",
+        lambda phone: {"messages": [], "lead_data": {"nome": "Ana", "necessidade": "site"}, "lead_id": 7},
+    )
+    monkeypatch.setattr(orch.rag, "retrieve", lambda text: [])
+    monkeypatch.setattr(
+        orch.gemini_client, "generate_turn",
+        lambda history, context, lead_data, message, contact_name="": TurnResult(
+            resposta="Claro! Vou te mandar o link de novo.",
+            dados_lead={"nome": "Ana", "necessidade": "site"},
+            classificacao={"etiqueta": "quente", "tema": "site"},
+            acao="reenviar_link",
+        ),
+    )
+
+    def _fail(*a, **k):
+        raise AssertionError("reenvio não deve recriar/atualizar o lead")
+
+    monkeypatch.setattr(orch.store, "create_or_update_lead", _fail)
+    monkeypatch.setattr(orch.store, "upsert_conversation", lambda *a, **k: {})
+
+    async def fake_send(to, body):
+        sent.append((to, body))
+
+    monkeypatch.setattr(orch.whatsapp, "send_text", fake_send)
+
+    await orch.handle_message(ParsedMessage("wamid.9", "5511999", "Ana", "manda o link de novo?", "PHONE"))
+
+    assert len(sent) == 2
+    assert "calendly.com/empresa" in sent[1][1]
