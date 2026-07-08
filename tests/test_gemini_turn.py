@@ -34,14 +34,16 @@ def test_generate_turn_returns_parsed(monkeypatch):
         context=["Trecho"],
         lead_data={"nome": "Ana"},
         message="vocês fazem site?",
+        contact_name="Marcos",
     )
 
     assert isinstance(out, TurnResult)
     assert out.resposta == "olá"
     assert captured["model"] == _settings().chat_model
     assert captured["config"].system_instruction == prompts.SYSTEM_INSTRUCTION
-    assert captured["config"].temperature == 0.3
+    assert captured["config"].temperature == 0.6
     assert captured["config"].response_mime_type == "application/json"
     assert captured["config"].response_schema is TurnResult
     # histórico (2) + turno atual (1) = 3 mensagens
     assert len(captured["contents"]) == 3
+    assert "Marcos" in captured["contents"][-1].parts[0].text

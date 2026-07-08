@@ -37,9 +37,10 @@ def generate_turn(
     context: list[str],
     lead_data: dict,
     message: str,
+    contact_name: str = "",
 ) -> TurnResult:
     s = get_settings()
-    user_turn = prompts.build_user_turn(context, lead_data, message)
+    user_turn = prompts.build_user_turn(context, lead_data, message, contact_name)
 
     contents = []
     for m in history:
@@ -52,7 +53,7 @@ def generate_turn(
         contents=contents,
         config=types.GenerateContentConfig(
             system_instruction=prompts.SYSTEM_INSTRUCTION,
-            temperature=0.3,
+            temperature=0.6,
             response_mime_type="application/json",
             response_schema=TurnResult,
         ),

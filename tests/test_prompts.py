@@ -29,3 +29,13 @@ def test_build_user_turn_skips_empty_lead_fields():
     out = build_user_turn(context=[], lead_data={"nome": "Ana", "empresa": ""}, message="oi")
     assert "nome=Ana" in out
     assert "empresa=" not in out
+
+
+def test_build_user_turn_includes_profile_name():
+    out = build_user_turn(context=[], lead_data={}, message="oi", contact_name="Marcos")
+    assert "NOME NO PERFIL DO WHATSAPP: Marcos" in out
+
+
+def test_build_user_turn_omits_profile_line_when_empty():
+    out = build_user_turn(context=[], lead_data={}, message="oi")
+    assert "PERFIL" not in out
