@@ -272,7 +272,25 @@ permanece a base; estas são as evoluções:
 - **Ingestão multi-formato validada** — `.md`, `.txt`, `.pdf` (pypdf) e `.docx` (python-docx).
 - **Nota de produção** — o free tier do Gemini é ≈ 10 req/min; para volume real, habilitar billing no Google AI Studio.
 
-### Status (2026-06-26)
-Código completo, 46 testes passando, em `main`. Supabase aplicado e validado ao vivo
-(projeto `wsrjwdkuaoaqgscuxmrj`). RAG validado de ponta a ponta. Pendente para ir ao
-vivo: credenciais Meta (com o time), link do Calendly e o deploy.
+### Pacote de naturalidade (2026-07-08)
+- **Prompt**: persona Pix Safety explícita; mensagens curtas (1-3 frases); no máximo UMA
+  pergunta por mensagem; anti-repetição de perguntas de coleta; uso do nome do perfil do
+  WhatsApp (`contact_name` do webhook, agora passado ao LLM) para confirmar identidade;
+  `temperature` 0.3 → 0.6.
+- **Reenvio do Calendly**: nova ação `reenviar_link` (só sob pedido explícito do cliente);
+  o prompt recebe o flag `link_ja_enviado` para o modelo saber que o link já foi; o guard
+  `already_scheduled` continua impedindo reenvio automático.
+- **Mídia**: `ParsedMessage.msg_type`; áudio/imagem/documento recebem fallback educado
+  (não caem mais no vácuo); reações são ignoradas.
+- **Presença**: `mark_read_and_typing` (ticks azuis + "digitando...", 1 POST na Graph API,
+  best-effort antes de cada resposta).
+- **Plano pós-go-live**: `docs/superpowers/plans/2026-07-08-melhorias-pos-golive.md`
+  (transcrição de voice notes com Gemini, debounce de rajada, follow-up de abandono,
+  notificação de lead quente, webhook do Calendly, checklist operacional).
+
+### Status (2026-07-08)
+Código completo, 58 testes passando, em `main` (GitHub `Rasantis/agente_zap_pix`).
+Supabase com a base real do Pix Safety (26 chunks); deploy no Render no ar com webhook
+validado; naturalidade validada com simulação real (retrieval 15/15; reenvio de link OK).
+Pendente para 100% ao vivo: `META_ACCESS_TOKEN`/`CALENDLY_URL` nas envs do Render e o
+time configurar o webhook na Meta.
