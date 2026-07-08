@@ -11,9 +11,9 @@ from app.orchestrator import handle_message
 app = FastAPI()
 logger = logging.getLogger("agente_zap")
 
-FALLBACK_MSG = "Tive uma instabilidade aqui do meu lado 😅 Pode mandar a mensagem de novo, por favor?"
-FALLBACK_AUDIO = "Ainda não consigo ouvir áudios por aqui 🙏 Pode me escrever, por favor?"
-FALLBACK_UNSUPPORTED = "Por enquanto eu só consigo ler mensagens de texto 🙏 Pode escrever pra mim?"
+FALLBACK_MSG = "Tive uma instabilidade aqui do meu lado. Pode mandar a mensagem de novo, por favor?"
+FALLBACK_AUDIO = "Ainda não consigo ouvir áudios por aqui. Pode me escrever, por favor?"
+FALLBACK_UNSUPPORTED = "Por enquanto eu só consigo ler mensagens de texto. Pode escrever pra mim, por favor?"
 
 _seen_ids: "OrderedDict[str, None]" = OrderedDict()
 _SEEN_MAX = 1000
