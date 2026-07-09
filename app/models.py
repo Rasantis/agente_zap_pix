@@ -30,3 +30,24 @@ class TurnResult(BaseModel):
     dados_lead: DadosLead = Field(default_factory=DadosLead)
     classificacao: Classificacao = Field(default_factory=Classificacao)
     acao: str = "continuar"
+
+
+# Modelos "wire": o schema enviado ao Gemini. SEM defaults — a API do Gemini
+# rejeita "default" no response_schema (ValueError em versões novas do SDK).
+# Todos os campos são obrigatórios; os anuláveis aceitam null explícito.
+class DadosLeadWire(BaseModel):
+    nome: str | None
+    empresa: str | None
+    necessidade: str | None
+
+
+class ClassificacaoWire(BaseModel):
+    etiqueta: Literal["quente", "morno", "frio"]
+    tema: str
+
+
+class TurnResultWire(BaseModel):
+    resposta: str
+    dados_lead: DadosLeadWire
+    classificacao: ClassificacaoWire
+    acao: Literal["continuar", "mandar_calendly", "reenviar_link"]

@@ -5,7 +5,7 @@ from google.genai import types
 
 from app import prompts
 from app.config import get_settings
-from app.models import TurnResult
+from app.models import TurnResult, TurnResultWire
 
 
 def _client() -> genai.Client:
@@ -56,7 +56,11 @@ def generate_turn(
             system_instruction=prompts.SYSTEM_INSTRUCTION,
             temperature=0.6,
             response_mime_type="application/json",
-            response_schema=TurnResult,
+            # o schema "wire" não tem defaults: a API do Gemini rejeita defaults
+            response_schema=TurnResultWire,
         ),
     )
-    return resp.parsed
+    wire = resp.parsed
+    if wire is None:
+        raise ValueError("Gemini não retornou JSON parseável para o turno")
+    return TurnResult(**wire.model_dump())
