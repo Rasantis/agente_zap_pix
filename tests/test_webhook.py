@@ -24,6 +24,7 @@ def _settings(monkeypatch):
         return None
 
     monkeypatch.setattr(main.whatsapp, "mark_read_and_typing", _noop_typing)
+    monkeypatch.setattr(main.store, "log_error", lambda *a, **k: None)
     return s
 
 

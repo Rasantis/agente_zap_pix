@@ -1,10 +1,11 @@
 import logging
+import traceback
 from collections import OrderedDict
 
 from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 
-from app import whatsapp
+from app import store, whatsapp
 from app.config import get_settings
 from app.orchestrator import handle_message
 
@@ -58,6 +59,10 @@ async def process_event(payload: dict) -> None:
         await handle_message(parsed)
     except Exception:
         logger.exception("Falha ao processar mensagem %s", parsed.message_id)
+        try:
+            store.log_error("process_event", parsed.message_id, traceback.format_exc())
+        except Exception:
+            logger.warning("Falha ao gravar error_log para %s", parsed.message_id)
         try:
             await whatsapp.send_text(parsed.from_phone, FALLBACK_MSG)
         except Exception:

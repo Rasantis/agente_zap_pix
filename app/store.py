@@ -70,3 +70,10 @@ def insert_document(content: str, metadata: dict, embedding: list[float]) -> Non
 
 def clear_documents() -> None:
     _supabase().table("documents").delete().neq("id", 0).execute()
+
+
+def log_error(source: str, message_id: str, tb: str) -> None:
+    """Grava o traceback em error_logs (visível via MCP, sem depender do painel do host)."""
+    _supabase().table("error_logs").insert(
+        {"source": source, "message_id": message_id, "traceback": tb}
+    ).execute()
