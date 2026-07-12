@@ -1,9 +1,8 @@
 def build_calendly_message(lead_data: dict, calendly_url: str) -> str:
     nome = (lead_data or {}).get("nome")
-    saudacao = f"Perfeito, {nome}! " if nome else "Perfeito! "
+    inicio = f"{nome}, segue" if nome else "Segue"
     return (
-        f"{saudacao}Para a gente seguir, é só escolher o melhor horário "
-        f"para uma conversa com o nosso time pelo link abaixo:\n\n"
+        f"{inicio} a agenda do nosso time — é só escolher o horário que funcionar melhor pra você:\n\n"
         f"{calendly_url}\n\n"
-        "Assim que você agendar, já fica confirmado. Qualquer dúvida, é só me chamar por aqui."
+        "Qualquer dúvida antes da conversa, é só me chamar por aqui."
     )
