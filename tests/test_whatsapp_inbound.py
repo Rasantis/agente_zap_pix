@@ -102,6 +102,7 @@ def test_parse_incoming_audio_returns_msg_type():
     assert m is not None
     assert m.msg_type == "audio"
     assert m.text == ""
+    assert m.media_id == "1908647269898587"
 
 
 def test_parse_incoming_reaction_ignored():

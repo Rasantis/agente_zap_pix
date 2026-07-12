@@ -25,6 +25,11 @@ def _settings(monkeypatch):
 
     monkeypatch.setattr(main.whatsapp, "mark_read_and_typing", _noop_typing)
     monkeypatch.setattr(main.store, "log_error", lambda *a, **k: None)
+
+    async def _no_download(media_id):
+        raise RuntimeError("download_media não foi mockado neste teste")
+
+    monkeypatch.setattr(main.whatsapp, "download_media", _no_download)
     return s
 
 
@@ -115,33 +120,66 @@ def _signed(body: bytes):
     return "sha256=" + hmac.new(b"SECRET", body, hashlib.sha256).hexdigest()
 
 
-def test_post_audio_sends_fallback(monkeypatch):
+def _audio_body(wamid: str) -> bytes:
+    return json.dumps({
+        "entry": [{"changes": [{"value": {
+            "metadata": {"phone_number_id": "PHONE"},
+            "contacts": [{"profile": {"name": "Ana"}}],
+            "messages": [{"from": "5511999", "id": wamid, "type": "audio",
+                          "audio": {"mime_type": "audio/ogg; codecs=opus", "id": "123", "voice": True}}],
+        }}]}],
+    }).encode()
+
+
+def test_post_audio_fallback_when_transcription_fails(monkeypatch):
+    # o fixture faz download_media falhar -> deve cair no fallback educado
     sent = []
 
     async def fake_send(to, body):
         sent.append((to, body))
 
     async def _boom(parsed):
-        raise AssertionError("handle_message não deve rodar para áudio")
+        raise AssertionError("handle_message não deve rodar quando a transcrição falha")
 
     monkeypatch.setattr(main.whatsapp, "send_text", fake_send)
     monkeypatch.setattr(main, "handle_message", _boom)
 
-    body = json.dumps({
-        "entry": [{"changes": [{"value": {
-            "metadata": {"phone_number_id": "PHONE"},
-            "contacts": [{"profile": {"name": "Ana"}}],
-            "messages": [{"from": "5511999", "id": "wamid.AUD1", "type": "audio",
-                          "audio": {"mime_type": "audio/ogg; codecs=opus", "id": "123", "voice": True}}],
-        }}]}],
-    }).encode()
-
+    body = _audio_body("wamid.AUD1")
     client = TestClient(main.app)
     resp = client.post("/webhook", content=body, headers={"X-Hub-Signature-256": _signed(body)})
 
     assert resp.status_code == 200
     assert len(sent) == 1
     assert "áudio" in sent[0][1] or "udios" in sent[0][1]
+
+
+def test_post_audio_transcribed_flows_to_handler(monkeypatch):
+    handled = []
+
+    async def fake_download(media_id):
+        assert media_id == "123"
+        return b"BYTES-DO-AUDIO", "audio/ogg"
+
+    def fake_transcribe(audio_bytes, mime_type):
+        assert audio_bytes == b"BYTES-DO-AUDIO"
+        assert mime_type == "audio/ogg"
+        return "quero saber sobre deteccao de EPI"
+
+    async def fake_handle(parsed):
+        handled.append(parsed)
+
+    monkeypatch.setattr(main.whatsapp, "download_media", fake_download)
+    monkeypatch.setattr(main.gemini_client, "transcribe_audio", fake_transcribe)
+    monkeypatch.setattr(main, "handle_message", fake_handle)
+
+    body = _audio_body("wamid.AUD2")
+    client = TestClient(main.app)
+    resp = client.post("/webhook", content=body, headers={"X-Hub-Signature-256": _signed(body)})
+
+    assert resp.status_code == 200
+    assert len(handled) == 1
+    assert handled[0].text == "quero saber sobre deteccao de EPI"
+    assert handled[0].msg_type == "text"  # áudio virou texto e seguiu o fluxo normal
 
 
 def test_post_text_marks_read_and_typing(monkeypatch):

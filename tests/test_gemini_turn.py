@@ -74,6 +74,28 @@ def test_generate_turn_raises_when_parsed_none(monkeypatch):
         gc.generate_turn([], [], {}, "oi")
 
 
+def test_transcribe_audio_calls_gemini(monkeypatch):
+    captured = {}
+
+    class _Models:
+        def generate_content(self, model, contents, config=None):
+            captured["model"] = model
+            captured["contents"] = contents
+            return type("R", (), {"text": "  quero saber sobre EPI  "})()
+
+    class _Client:
+        models = _Models()
+
+    monkeypatch.setattr(gc, "get_settings", _settings)
+    monkeypatch.setattr(gc, "_client", lambda: _Client())
+
+    out = gc.transcribe_audio(b"AUDIO-FAKE", "audio/ogg")
+
+    assert out == "quero saber sobre EPI"
+    assert captured["model"] == _settings().chat_model
+    assert len(captured["contents"]) == 2  # instrução + Part do áudio
+
+
 def test_wire_schema_has_no_defaults():
     # regressão do bug de produção: a API do Gemini rejeita "default" no response_schema
     import json

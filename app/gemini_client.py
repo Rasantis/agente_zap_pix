@@ -32,6 +32,20 @@ def embed_text(text: str, task_type: str) -> list[float]:
     return _l2_normalize(list(resp.embeddings[0].values))
 
 
+def transcribe_audio(audio_bytes: bytes, mime_type: str) -> str:
+    """Transcreve uma voice note (áudio inline ≤ 20 MB) usando o próprio Gemini."""
+    s = get_settings()
+    resp = _client().models.generate_content(
+        model=s.chat_model,
+        contents=[
+            "Transcreva este áudio em português do Brasil. "
+            "Retorne APENAS o texto falado, sem comentários nem formatação.",
+            types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+        ],
+    )
+    return (resp.text or "").strip()
+
+
 def generate_turn(
     history: list[dict],
     context: list[str],

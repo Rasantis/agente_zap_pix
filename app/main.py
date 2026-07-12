@@ -1,3 +1,4 @@
+import dataclasses
 import logging
 import traceback
 from collections import OrderedDict
@@ -5,7 +6,7 @@ from collections import OrderedDict
 from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 
-from app import store, whatsapp
+from app import gemini_client, store, whatsapp
 from app.config import get_settings
 from app.orchestrator import handle_message
 
@@ -48,10 +49,25 @@ async def process_event(payload: dict) -> None:
         await whatsapp.mark_read_and_typing(parsed.message_id)
     except Exception:
         logger.warning("Indicador de digitação falhou para %s", parsed.message_id)
-    if parsed.msg_type != "text":
-        msg = FALLBACK_AUDIO if parsed.msg_type == "audio" else FALLBACK_UNSUPPORTED
+    if parsed.msg_type == "audio":
+        transcrito = ""
+        if parsed.media_id:
+            try:
+                audio, mime = await whatsapp.download_media(parsed.media_id)
+                transcrito = gemini_client.transcribe_audio(audio, mime)
+            except Exception:
+                logger.exception("Falha ao transcrever áudio %s", parsed.message_id)
+        if not transcrito:
+            try:
+                await whatsapp.send_text(parsed.from_phone, FALLBACK_AUDIO)
+            except Exception:
+                logger.exception("Falha ao enviar fallback de áudio para %s", parsed.from_phone)
+            return
+        # áudio virou texto: segue o fluxo normal do turno
+        parsed = dataclasses.replace(parsed, text=transcrito, msg_type="text")
+    elif parsed.msg_type != "text":
         try:
-            await whatsapp.send_text(parsed.from_phone, msg)
+            await whatsapp.send_text(parsed.from_phone, FALLBACK_UNSUPPORTED)
         except Exception:
             logger.exception("Falha ao enviar fallback de mídia para %s", parsed.from_phone)
         return

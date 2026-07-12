@@ -44,7 +44,11 @@ def parse_incoming(payload: dict) -> ParsedMessage | None:
         if not text:
             return None  # texto sem body = malformado
 
-    return ParsedMessage(message_id, from_phone, name, text, phone_number_id, msg_type)
+    media_id = ""
+    if msg_type == "audio":
+        media_id = (msg.get("audio") or {}).get("id", "")
+
+    return ParsedMessage(message_id, from_phone, name, text, phone_number_id, msg_type, media_id)
 
 
 def verify_signature(raw_body: bytes, signature_header: str | None, app_secret: str) -> bool:
@@ -71,6 +75,26 @@ async def send_text(to: str, body: str) -> None:
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(url, headers=headers, json=payload)
         resp.raise_for_status()
+
+
+async def download_media(media_id: str) -> tuple[bytes, str]:
+    """Baixa uma mídia recebida (2 passos: id -> URL temporária -> binário).
+
+    A URL retornada pela Meta expira em ~5 minutos e exige o mesmo Bearer token.
+    Retorna (conteúdo, mime_type sem parâmetros — ex.: 'audio/ogg').
+    """
+    s = get_settings()
+    headers = {"Authorization": f"Bearer {s.meta_access_token}"}
+    async with httpx.AsyncClient(timeout=60) as client:
+        meta = await client.get(
+            f"https://graph.facebook.com/{s.meta_graph_version}/{media_id}", headers=headers
+        )
+        meta.raise_for_status()
+        info = meta.json()
+        arquivo = await client.get(info["url"], headers=headers)
+        arquivo.raise_for_status()
+        mime = (info.get("mime_type") or "application/octet-stream").split(";")[0].strip()
+        return arquivo.content, mime
 
 
 async def mark_read_and_typing(message_id: str) -> None:

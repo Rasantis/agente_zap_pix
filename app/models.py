@@ -12,6 +12,7 @@ class ParsedMessage:
     text: str
     phone_number_id: str
     msg_type: str = "text"
+    media_id: str = ""  # id da mídia na Meta (preenchido quando msg_type == "audio")
 
 
 class DadosLead(BaseModel):
