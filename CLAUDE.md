@@ -18,7 +18,7 @@ Visão geral em `README.md`; spec e plano em `docs/superpowers/`.
 ## Convenções / cuidados
 - `Classificacao.etiqueta` é `Literal["quente","morno","frio"]` (casa com o `CHECK` de `leads.etiqueta`).
 - Calendly: só envia depois de ter **nome + necessidade** e **uma vez** por conversa (guard `already_scheduled` via `conv.lead_id`); **reenvio** só quando o cliente pede explicitamente (ação `reenviar_link` do LLM + o flag `link_ja_enviado` vai no prompt via `build_user_turn`).
-- `ParsedMessage.msg_type`: `"text"` segue o fluxo normal; mídia (áudio/imagem/etc.) recebe fallback educado no `main.process_event`; **reações são ignoradas** (`parse_incoming` → None).
+- `ParsedMessage.msg_type`: `"text"` segue o fluxo normal; **áudio é transcrito** (`whatsapp.download_media` → `gemini_client.transcribe_audio` → vira turno de texto; falha → fallback educado); outras mídias recebem fallback educado; **reações são ignoradas** (`parse_incoming` → None). OGG/Opus do WhatsApp validado em produção.
 - `whatsapp.mark_read_and_typing(message_id)`: ticks azuis + "digitando..." (1 POST; best-effort no `process_event`, falha não bloqueia o turno).
 - Prompt de naturalidade: persona Pix Safety, 1 pergunta por vez, anti-repetição, nome do perfil do WhatsApp (`contact_name`) usado pra confirmar identidade; `temperature=0.6` no `generate_turn`.
 - A função do store é `insert_document` (foi renomeada de `upsert_document`).
