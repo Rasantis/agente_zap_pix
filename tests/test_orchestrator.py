@@ -13,12 +13,18 @@ def _settings():
     )
 
 
-def test_should_send_calendly_by_action():
-    assert orch.should_send_calendly({}, "mandar_calendly") is True
+def test_should_send_calendly_needs_action_and_fields():
+    assert orch.should_send_calendly({"nome": "Ana", "necessidade": "site"}, "mandar_calendly") is True
 
 
-def test_should_send_calendly_by_fields():
-    assert orch.should_send_calendly({"nome": "Ana", "necessidade": "site"}, "continuar") is True
+def test_fields_alone_do_not_send():
+    # sem o cliente topar (acao continuar), nao envia — o modelo oferece primeiro
+    assert orch.should_send_calendly({"nome": "Ana", "necessidade": "site"}, "continuar") is False
+
+
+def test_action_alone_does_not_send():
+    # trava de seguranca: mesmo o modelo mandando, sem nome+necessidade nao envia
+    assert orch.should_send_calendly({"nome": "Ana"}, "mandar_calendly") is False
 
 
 def test_should_not_send_when_incomplete():

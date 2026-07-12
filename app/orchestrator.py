@@ -6,8 +6,11 @@ REQUIRED_FIELDS = ("nome", "necessidade")
 
 
 def should_send_calendly(lead_data: dict, acao: str) -> bool:
-    if acao == "mandar_calendly":
-        return True
+    # O envio segue a conversa: o modelo oferece o link e só usa "mandar_calendly"
+    # quando o cliente topa. Exigimos também os campos mínimos como trava de segurança
+    # (o prompt instrui a não agendar sem nome + necessidade).
+    if acao != "mandar_calendly":
+        return False
     return all((lead_data or {}).get(field) for field in REQUIRED_FIELDS)
 
 
