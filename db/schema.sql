@@ -55,6 +55,16 @@ alter table public.documents enable row level security;
 alter table public.leads enable row level security;
 alter table public.conversations enable row level security;
 
+-- Erros do bot (tracebacks gravados pelo main.process_event; consultável via MCP)
+create table if not exists public.error_logs (
+  id         bigint primary key generated always as identity,
+  source     text,
+  message_id text,
+  traceback  text,
+  created_at timestamptz not null default now()
+);
+alter table public.error_logs enable row level security;
+
 -- RPC de similaridade por cosseno
 create or replace function public.match_documents(
   query_embedding extensions.vector(768),

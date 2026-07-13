@@ -20,7 +20,11 @@ design proposto, arquivos afetados, riscos e esforço estimado (P/M/G).
 
 ---
 
-## 1. Transcrição de voice notes com Gemini
+## 1. Transcrição de voice notes com Gemini — ✅ IMPLEMENTADO (2026-07-09)
+
+> Entregue no commit `34a6eae` conforme o design abaixo (`whatsapp.download_media` +
+> `gemini_client.transcribe_audio` + fluxo no `main.process_event`). OGG/Opus do WhatsApp
+> funcionou direto no Gemini (sem transcodificação); validado em produção com áudio real.
 
 **Objetivo:** substituir o fallback educado atual de áudio por uma transcrição real, para
 que voice notes entrem no fluxo normal de qualificação como se fossem texto.

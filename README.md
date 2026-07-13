@@ -13,27 +13,31 @@ enviando o link do Calendly.
 
 ## Como o bot se comporta
 - Responde dúvidas **apenas com base no contexto** recuperado (não inventa).
-- Coleta de forma natural: **nome** e **necessidade** (empresa é opcional).
-- Só envia o Calendly **depois** de ter nome + necessidade, e **uma única vez** por conversa.
+- **Entende voice notes**: baixa o áudio da Meta e transcreve com o próprio Gemini; o texto segue o fluxo normal (se a transcrição falhar, pede educadamente por texto).
+- Coleta de forma natural: **nome** e **necessidade** (empresa é opcional). Usa o nome do perfil do WhatsApp pra confirmar identidade.
+- Agendamento com consentimento: **oferece** o link do Calendly no momento certo e só envia **quando o cliente topa** — uma única vez por conversa (reenvio apenas se o cliente pedir).
+- Tom humano e sóbrio (público industrial): sem emojis, sem repetir o nome do cliente, respostas curtas pra perguntas curtas; se perguntarem se é um robô, responde com honestidade.
+- Marca as mensagens como lidas e exibe "digitando..." antes de responder.
 - Classifica o lead (`etiqueta`: quente/morno/frio, `tema`) e grava em `leads`.
+- Qualquer erro de processamento grava o traceback em `error_logs` (diagnóstico sem depender do painel do host).
 
 ## Arquitetura (módulos)
 ```
 app/
   main.py          # FastAPI: GET/POST /webhook (verificação, assinatura, 200 rápido, background, dedup, fallback)
   config.py        # settings via env/.env (pydantic-settings)
-  models.py        # ParsedMessage + TurnResult/DadosLead/Classificacao
-  whatsapp.py      # parse_incoming · verify_signature · send_text
+  models.py        # ParsedMessage + TurnResult (domínio) + TurnResultWire (schema p/ Gemini, sem defaults)
+  whatsapp.py      # parse_incoming · verify_signature · send_text · mark_read_and_typing · download_media
   prompts.py       # SYSTEM_INSTRUCTION · build_user_turn
-  gemini_client.py # embed_text (L2) · generate_turn (saída estruturada)
+  gemini_client.py # embed_text (L2) · generate_turn (saída estruturada) · transcribe_audio
   rag.py           # retrieve (embed + match_documents)
-  store.py         # Supabase: conversations, leads, documents
+  store.py         # Supabase: conversations, leads, documents, error_logs
   scheduling.py    # build_calendly_message
   orchestrator.py  # handle_message (o "cérebro" do turno)
 ingest/
   chunker.py       # chunk_text
   ingest.py        # CLI: lê .md/.txt/.pdf/.docx → chunk → embed → grava em documents
-db/schema.sql      # extensão vector, tabelas, índice HNSW, função match_documents
+db/schema.sql      # extensão vector, tabelas (incl. error_logs), índice HNSW, match_documents
 ```
 
 ## Setup
@@ -84,7 +88,8 @@ pytest -v          # Windows: .venv/Scripts/python -m pytest -v
 2. Na Meta, configurar o webhook com a URL + verify token; confirmar a verificação (GET) → retorna o `hub.challenge`.
 3. Indexar uma base (`python -m ingest.ingest ./conhecimento --reset`).
 4. Enviar uma mensagem do WhatsApp para o número.
-5. Conferir: o bot responde fundamentado no conteúdo; `conversations` tem a linha do número; ao completar nome + necessidade, chega o link do Calendly **uma vez** e `leads` recebe a linha com `etiqueta`/`tema` e `status=link_enviado`.
+5. Conferir: o bot responde fundamentado no conteúdo; `conversations` tem a linha do número; ao completar nome + necessidade ele **oferece** o agendamento, e quando o cliente topa chega o link do Calendly **uma vez** — `leads` recebe a linha com `etiqueta`/`tema` e `status=link_enviado`.
+6. Mandar uma **voice note**: o bot deve responder ao conteúdo falado (transcrição via Gemini).
 
 ## Notas de produção
 - **Gemini free tier ≈ 10 req/min** — para volume real, habilite billing no Google AI Studio.

@@ -27,9 +27,14 @@ Visão geral em `README.md`; spec e plano em `docs/superpowers/`.
 - TDD: cada feature tem teste; mantenha a suíte verde antes de commitar.
 
 ## Estado atual
-Código completo, **58 testes passando**, em `main`. Supabase aplicado e validado ao vivo;
-base de conhecimento REAL do Pix Safety indexada (26 chunks) e RAG validado ponta a ponta;
-deploy no Render no ar (webhook validado). Pacote de naturalidade aplicado e validado com
-simulação real. Falta, para ir 100% ao vivo: token/Calendly nas envs do Render e o time
-configurar o webhook na Meta. Melhorias futuras: `docs/superpowers/plans/2026-07-08-melhorias-pos-golive.md`.
-Contexto operacional na memória do projeto.
+**EM PRODUÇÃO** — o bot está ao vivo no WhatsApp (+55 51 2391-7020), validado com leads
+reais: texto, **voice notes transcritas** (OGG/Opus OK), qualificação, agendamento com
+consentimento e reenvio sob pedido. **64 testes passando**, em `main` (GitHub
+`Rasantis/agente_zap_pix`, autodeploy no Render). Base real do Pix Safety indexada (26 chunks).
+Erros de produção ficam em `error_logs` no Supabase (consultar via MCP `supabase`).
+Cuidado: schema wire sem defaults (`TurnResultWire`) é obrigatório — a API do Gemini/SDK
+rejeita defaults no `response_schema`; não voltar a passar `TurnResult` direto.
+Pendências operacionais (antes de escalar tráfego): planos pagos Render/Supabase/Gemini e
+rotação de segredos — checklist em `docs/superpowers/plans/2026-07-08-melhorias-pos-golive.md`
+(a transcrição de áudio do plano JÁ foi implementada). Auditoria de versões com upgrade
+recomendado (não aplicado): `notas/relatorio-auditoria-versoes.md`. Contexto na memória do projeto.

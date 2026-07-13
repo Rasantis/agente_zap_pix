@@ -288,9 +288,29 @@ permanece a base; estas são as evoluções:
   (transcrição de voice notes com Gemini, debounce de rajada, follow-up de abandono,
   notificação de lead quente, webhook do Calendly, checklist operacional).
 
-### Status (2026-07-08)
-Código completo, 58 testes passando, em `main` (GitHub `Rasantis/agente_zap_pix`).
-Supabase com a base real do Pix Safety (26 chunks); deploy no Render no ar com webhook
-validado; naturalidade validada com simulação real (retrieval 15/15; reenvio de link OK).
-Pendente para 100% ao vivo: `META_ACCESS_TOKEN`/`CALENDLY_URL` nas envs do Render e o
-time configurar o webhook na Meta.
+### Go-live e evoluções (2026-07-09)
+- **BOT EM PRODUÇÃO** no +55 51 2391-7020, validado com conversas reais (texto e áudio).
+- **Schema wire sem defaults (`TurnResultWire`)** — correção definitiva do
+  `ValueError: Default value is not supported in the response schema` (validação presente
+  no SDK google-genai 1.0–1.11; a API oficial ignora `default`). O schema enviado ao
+  Gemini não pode ter defaults; conversão wire→`TurnResult` no `generate_turn`.
+- **Tabela `error_logs`** — `process_event` grava o traceback de qualquer falha de turno
+  no Supabase (diagnóstico via MCP, sem depender de painel de host).
+- **Humanização (rodada 2)** — sem repetir o nome do cliente/empresa, cumprimento único,
+  sem eco da pergunta, respostas curtas, variação de ritmo; honestidade se perguntarem
+  se é um robô.
+- **Suporte a voice notes** — `whatsapp.download_media` (2 passos, Bearer) →
+  `gemini_client.transcribe_audio` (áudio inline, ~32 tokens/s) → o texto segue o turno
+  normal; falha → fallback educado. OGG/Opus do WhatsApp validado em produção.
+- **Agendamento com consentimento** — o bot oferece o link no momento certo e só envia
+  quando o cliente topa (`should_send_calendly` exige `acao=mandar_calendly` E
+  nome+necessidade); reenvio segue apenas sob pedido explícito.
+- **Registro do número via API** (`POST /{phone_id}/register`) quando o painel da Meta
+  falhou; PIN de duas etapas definido.
+- Auditoria de versões da stack (não aplicada — produção congelada):
+  `notas/relatorio-auditoria-versoes.md`.
+
+### Status (2026-07-09)
+Em produção, 64 testes passando, `main` no GitHub com autodeploy no Render.
+Pendências operacionais antes de escalar: planos pagos (Render/Supabase/Gemini) e
+rotação de segredos — ver plano pós-go-live.
